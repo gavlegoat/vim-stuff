@@ -5,6 +5,9 @@ set nocompatible
 filetype plugin on
 filetype indent on
 
+" Configure Haskell conceal
+let hscoptions="swA"
+
 " Set tabs to 4 characters and replace them with spaces
 set tabstop=4
 set shiftwidth=4
