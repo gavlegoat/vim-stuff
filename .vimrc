@@ -1,6 +1,8 @@
 " Explicitly turn off compatibility mode (should be off anyway)
 set nocompatible
 
+execute pathogen#infect()
+
 " Enable filetype-specific options
 filetype plugin on
 filetype indent on
@@ -70,6 +72,3 @@ execute "inoremap {<CR> {<CR>a<CR>a<Esc>d" . &tabstop . "hr}k$c$"
 " Recommended set up for latex-suite
 set grepprg=grep\ -nH\ $*
 let g:tex_flavor='latex'
-
-" Give Idris files Haskell syntax highlighting
-au BufNewFile,BufRead *.idr set filetype=haskell
