@@ -1,7 +1,17 @@
 " Explicitly turn off compatibility mode (should be off anyway)
 set nocompatible
 
+" Set vim to use full color range
+set t_Co=256
+
+" Load plugins from ~/.vim/bundle
 execute pathogen#infect()
+
+" Configure the status bar
+let g:airline_theme='powerlineish'
+let g:airline_left_sep=''
+let g:airline_right_sep=''
+let g:airline#extensions#tabline#enabled=1
 
 " Enable filetype-specific options
 filetype plugin on
@@ -38,9 +48,6 @@ set cursorcolumn
 " Add new windows below and to the right (default is above and left)
 set splitbelow
 set splitright
-
-" Show line numbers
-set nu
 
 " Color the 80th column
 set colorcolumn=80
