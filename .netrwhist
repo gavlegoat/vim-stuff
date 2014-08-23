@@ -1,8 +1,10 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =6
+let g:netrw_dirhist_cnt =8
 let g:netrw_dirhist_1='/home/greg/Documents/programs/.git'
 let g:netrw_dirhist_2='/home/greg/.vim'
 let g:netrw_dirhist_3='/home/greg/Documents/programs/impal/src'
 let g:netrw_dirhist_4='/home/greg/.vim'
 let g:netrw_dirhist_5='/home/greg/.vim/plugin'
 let g:netrw_dirhist_6='/home/greg/.fluxbox'
+let g:netrw_dirhist_7='/home/greg/.vim/bundle/idris-vim'
+let g:netrw_dirhist_8='/home/greg/Documents/programs/mandelbrot'
