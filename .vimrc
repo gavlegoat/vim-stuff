@@ -17,9 +17,6 @@ let g:airline#extensions#tabline#enabled=1
 filetype plugin on
 filetype indent on
 
-" Configure Haskell conceal
-let hscoptions="swA"
-
 " Show line numbers
 set nu
 
@@ -78,10 +75,6 @@ set list listchars=trail:·
 map <C-W>o <Nop>
 " Insert a matching brace after {<CR> (depends on smartindent)
 execute "inoremap {<CR> {<CR>a<CR>a<Esc>d" . &tabstop . "hr}k$c$"
-
-" Recommended set up for latex-suite
-set grepprg=grep\ -nH\ $*
-let g:tex_flavor='latex'
 
 " Use latex-suite for Rnw files
 autocmd BufRead,BufNewFile *.Rnw set filetype=tex
