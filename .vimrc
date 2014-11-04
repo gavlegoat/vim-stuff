@@ -82,3 +82,9 @@ execute "inoremap {<CR> {<CR>a<CR>a<Esc>d" . &tabstop . "hr}k$c$"
 " Recommended set up for latex-suite
 set grepprg=grep\ -nH\ $*
 let g:tex_flavor='latex'
+
+" Use latex-suite for Rnw files
+autocmd BufRead,BufNewFile *.Rnw set filetype=tex
+
+" Map function keys to commands for Coq (F2 undo, F3 next, F4 to cursor)
+autocmd FileType coq call coquille#FNMapping()
