@@ -17,6 +17,9 @@ let g:airline#extensions#tabline#enabled=1
 filetype plugin on
 filetype indent on
 
+" Save backup files in ~/.backup so they don't clutter the working dir
+set backupdir=~/.backup
+
 " Show line numbers
 set nu
 
@@ -78,3 +81,8 @@ execute "inoremap {<CR> {<CR>a<CR>a<Esc>d" . &tabstop . "hr}k$c$"
 
 " Use latex-suite for Rnw files
 autocmd BufRead,BufNewFile *.Rnw set filetype=tex
+" Use ATS syntax highlighting
+autocmd BufRead,BufNewFile *.dats set filetype=ats
+autocmd BufRead,BufNewFile *.sats set filetype=ats
+autocmd BufRead,BufNewFile *.hats set filetype=ats
+autocmd BufRead,BufNewFile *.cats set filetype=ats
