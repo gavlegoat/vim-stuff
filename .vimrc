@@ -4,6 +4,13 @@ set nocompatible
 " Set vim to use full color range
 set t_Co=256
 
+" Switches the cursor to orange in insert mode and back into gray in other
+" modes. Just helps keep from accidentally typing commands. May break in
+" certain terminals.
+let &t_SI = "\<Esc>]12;orange\x7"
+let &t_EI = "\<Esc>]12;gray\x7"
+autocmd VimLeave * silent !echo -ne "\033]112\007"
+
 " Load plugins from ~/.vim/bundle
 execute pathogen#infect()
 
@@ -16,9 +23,6 @@ let g:airline#extensions#tabline#enabled=1
 " Enable filetype-specific options
 filetype plugin on
 filetype indent on
-
-" Save backup files in ~/.backup so they don't clutter the working dir
-set backupdir=~/.backup
 
 " Show line numbers
 set nu
@@ -86,3 +90,6 @@ autocmd BufRead,BufNewFile *.dats set filetype=ats
 autocmd BufRead,BufNewFile *.sats set filetype=ats
 autocmd BufRead,BufNewFile *.hats set filetype=ats
 autocmd BufRead,BufNewFile *.cats set filetype=ats
+
+" Save backup files in ~/.backup so they don't clutter the working dir
+set backupdir=~/.backup
