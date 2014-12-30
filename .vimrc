@@ -91,5 +91,5 @@ autocmd BufRead,BufNewFile *.sats set filetype=ats
 autocmd BufRead,BufNewFile *.hats set filetype=ats
 autocmd BufRead,BufNewFile *.cats set filetype=ats
 
-" Save backup files in ~/.backup so they don't clutter the working dir
-set backupdir=~/.backup
+" Remove backup files
+set nobackup
