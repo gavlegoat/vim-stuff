@@ -80,8 +80,9 @@ set list listchars=trail:·
 
 " Disable the 'close all windows except this one' command
 map <C-W>o <Nop>
-" Insert a matching brace after {<CR> (depends on smartindent)
-execute "inoremap {<CR> {<CR>a<CR>a<Esc>d" . &tabstop . "hr}k$c$"
+
+" Insert closing brace in C style languages
+inoremap {<CR> {<CR>}<ESC>O
 
 " Use latex-suite for Rnw files
 autocmd BufRead,BufNewFile *.Rnw set filetype=tex
