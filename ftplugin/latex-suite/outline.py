@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 
 # Part of Latex-Suite
 #
@@ -9,9 +9,12 @@
 import re
 import os
 import sys
-import StringIO
+if sys.version_info <= (3, 0):
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
-# getFileContents {{{
+
 def getFileContents(fname):
     if type(fname) is not str:
         fname = fname.group(3)
@@ -36,19 +39,20 @@ def getFileContents(fname):
 
     return ('%%==== FILENAME: %s' % fname) + '\n' + contents
 
-# }}}
-# stripComments {{{
+
 def stripComments(contents):
     # remove all comments except those of the form
     # %%==== FILENAME: <filename.tex>
-    # BUG: This comment right after a new paragraph is not recognized: foo\\%comment
-    uncomm = [re.sub('(?<!\\\\)%(?!==== FILENAME: ).*', '', line) for line in contents.splitlines()]
+    # BUG: This comment right after a new paragraph is not recognized:
+    # foo\\%comment
+    uncomm = [re.sub('(?<!\\\\)%(?!==== FILENAME: ).*', '', line)
+              for line in contents.splitlines()]
     # also remove all only-whitespace lines.
     nonempty = [line for line in uncomm if line.strip()]
 
     return nonempty
-# }}}
-# addFileNameAndNumber {{{
+
+
 def addFileNameAndNumber(lines):
     filename = ''
     retval = ''
@@ -59,14 +63,15 @@ def addFileNameAndNumber(lines):
             retval += '<%s>%s\n' % (filename, line)
 
     return retval
-# }}}
-# getSectionLabels_Root {{{
+
+
 def getSectionLabels_Root(lineinfo, section_prefix, label_prefix):
     prev_txt = ''
     inside_env = 0
     prev_env = ''
-    outstr = StringIO.StringIO('')
+    outstr = StringIO('')
     pres_depth = len(section_prefix)
+    indent = ' ' * (2*pres_depth + 2)
 
     #print '+getSectionLabels_Root: lineinfo = [%s]' % lineinfo
     for line in lineinfo.splitlines():
@@ -82,6 +87,9 @@ def getSectionLabels_Root(lineinfo, section_prefix, label_prefix):
         # we found a label!
         m = re.search(r'\\label{(%s.*?)}' % label_prefix, line)
         if m:
+            # Get the corresponding label
+            label = m.group(1)
+
             # add the current line (except the \label command) to the text
             # which will be displayed below this label
             prev_txt += re.search(r'(^.*?)\\label{', line).group(1)
@@ -99,13 +107,13 @@ def getSectionLabels_Root(lineinfo, section_prefix, label_prefix):
             # :          e^{i\pi} + 1 = 0
             #
             # Use the current "section depth" for the leading indentation.
-            print >>outstr, '>%s%s\t\t<%s>' % (' '*(2*pres_depth+2),
-                    m.group(1), fname)
-            print >>outstr, ':%s%s' % (' '*(2*pres_depth+4), prev_txt)
+            outstr.write('>%s%s\t\t<%s>\n' % (indent, label, fname))
+            outstr.write(':%s  %s\n'       % (indent, prev_txt))
+
             prev_txt = ''
 
         # If we just encoutered the start or end of an environment or a
-        # label, then do not remember this line. 
+        # label, then do not remember this line.
         # NOTE: This assumes that there is no equation text on the same
         # line as the \begin or \end command. The text on the same line as
         # the \label was already handled.
@@ -131,12 +139,12 @@ def getSectionLabels_Root(lineinfo, section_prefix, label_prefix):
                 prev_txt = line
 
     return outstr.getvalue()
-    
-# }}}
-# getSectionLabels {{{
-def getSectionLabels(lineinfo, 
-        sectypes=['chapter', 'section', 'subsection', 'subsubsection'], 
-        section_prefix='', label_prefix=''):
+
+
+def getSectionLabels(lineinfo,
+                     sectypes=['chapter', 'section',
+                               'subsection', 'subsubsection'],
+                     section_prefix='', label_prefix=''):
 
     if not sectypes:
         return getSectionLabels_Root(lineinfo, section_prefix, label_prefix)
@@ -145,31 +153,32 @@ def getSectionLabels(lineinfo,
     ##        sectypes[0], section_prefix, lineinfo)
 
     sections = re.split(r'(<.*?>\\%s{.*})' % sectypes[0], lineinfo)
-    
+
     # there will 1+2n sections, the first containing the "preamble" and the
     # others containing the child sections as paris of [section_name,
     # section_text]
 
-    rettext = getSectionLabels(sections[0], sectypes[1:], section_prefix, label_prefix)
- 
-    for i in range(1,len(sections),2):
-        sec_num = (i+1)/2
-        section_name = re.search(r'\\%s{(.*?)}' % sectypes[0], sections[i]).group(1)
-        section_label_text = getSectionLabels(sections[i] + sections[i+1], sectypes[1:], 
-                                    section_prefix+('%d.' % sec_num), label_prefix)
+    rettext = getSectionLabels(
+        sections[0], sectypes[1:], section_prefix, label_prefix)
+
+    for i in range(1, len(sections), 2):
+        sec_num = (i + 1) / 2
+        section_name = re.search(
+            r'\\%s{(.*?)}' % sectypes[0], sections[i]).group(1)
+        section_label_text = getSectionLabels(
+            sections[i] + sections[i + 1], sectypes[1:],
+            section_prefix + ('%d.' % sec_num), label_prefix)
 
         if section_label_text:
-            sec_heading = 2*' '*len(section_prefix) + section_prefix
+            sec_heading = 2 * ' ' * len(section_prefix) + section_prefix
             sec_heading += '%d. %s' % (sec_num, section_name)
-            sec_heading += '<<<%d\n' % (len(section_prefix)/2+1)
+            sec_heading += '<<<%d\n' % (len(section_prefix) / 2 + 1)
 
             rettext += sec_heading + section_label_text
 
     return rettext
-    
-# }}}
 
-# main {{{
+
 def main(fname, label_prefix):
     [head, tail] = os.path.split(fname)
     if head:
@@ -180,7 +189,7 @@ def main(fname, label_prefix):
     lineinfo = addFileNameAndNumber(nonempty)
 
     return getSectionLabels(lineinfo, label_prefix=label_prefix)
-# }}}
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 2:
@@ -188,7 +197,4 @@ if __name__ == "__main__":
     else:
         prefix = ''
 
-    print main(sys.argv[1], prefix)
-
-
-# vim: fdm=marker
+    print(main(sys.argv[1], prefix))

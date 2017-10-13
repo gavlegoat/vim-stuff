@@ -7,6 +7,7 @@
 "              Part of vim-latexSuite: http://vim-latex.sourceforge.net
 " ============================================================================
 " Tex_SetTexViewerMaps: sets maps for this ftplugin {{{
+
 function! Tex_SetTexViewerMaps()
 	inoremap <silent> <Plug>Tex_Completion <Esc>:call Tex_Complete("default","text")<CR>
 	if !hasmapto('<Plug>Tex_Completion', 'i')
@@ -99,16 +100,17 @@ function! Tex_Complete(what, where)
 
 			redraw!
 
-		elseif exists("s:type") && s:type =~ 'cite'
+		elseif exists("s:type") && s:type =~ '[Cc]ite'
 
 			let s:prefix = matchstr(s:prefix, '\([^,]\+,\)*\zs\([^,]\+\)\ze$')
 			call Tex_Debug(":Tex_Complete: using s:prefix = ".s:prefix, "view")
 
-			if has('python') && Tex_GetVarValue('Tex_UsePython') 
+			if Tex_UsePython()
 				\ && Tex_GetVarValue('Tex_UseCiteCompletionVer2') == 1
 
 				exe 'cd '.s:origdir
 				silent! call Tex_StartCiteCompletion()
+				call Tex_EchoBibShortcuts()
 
 			elseif Tex_GetVarValue('Tex_UseJabref') == 1
 
@@ -235,7 +237,7 @@ function! Tex_CompleteWord(completeword, prefixlength)
 endfunction " }}}
 
 " ==============================================================================
-" File name completion helper functons
+" File name completion helper functions
 " ============================================================================== 
 " Tex_SetupFileCompletion:  {{{
 " Description: 
@@ -549,17 +551,17 @@ function! Tex_ScanFileForCite(prefix)
 	let presBufNum = bufnr('%')
 
 	let foundCiteFile = 0
-	" First find out if this file has a \bibliography command in it. If so,
-	" assume that this is the only file in the project which defines a
-	" bibliography.
-	if search('\\\(no\)\?bibliography{', 'w')
+	" First find out if this file has a \(no)bibliography or a \addbibresource
+	" (biblatex) command in it. If so, assume that this is the only file
+	" in the project which defines a bibliography.
+	if search('\(%.*\)\@<!\\\(\(no\)\?bibliography\|addbibresource\(\[.*\]\)\?\){', 'w')
 		call Tex_Debug('Tex_ScanFileForCite: found bibliography command in '.bufname('%'), 'view')
 		" convey that we have found a bibliography command. we do not need to
 		" proceed any further.
 		let foundCiteFile = 1
 
 		" extract the bibliography filenames from the command.
-		let bibnames = matchstr(getline('.'), '\\\(no\)\?bibliography{\zs.\{-}\ze}')
+		let bibnames = matchstr(getline('.'), '\\\(\(no\)\?bibliography\|addbibresource\(\[.*\]\)\?\){\zs.\{-}\ze}')
 		let bibnames = substitute(bibnames, '\s', '', 'g')
 
 		call Tex_Debug('trying to search through ['.bibnames.']', 'view')
@@ -575,9 +577,8 @@ function! Tex_ScanFileForCite(prefix)
 
 			" first try to find if a .bib file exists. If so do not search in
 			" the corresponding .bbl file. (because the .bbl file will most
-			" probly be generated automatically from the .bib file with
+			" probably be generated automatically from the .bib file with
 			" bibtex).
-			
 			let fname = Tex_FindFile(bibname, '.,'.g:Tex_BIBINPUTS, '.bib')
 			if fname != ''
 				call Tex_Debug('finding .bib file ['.bufname('%').']', 'view')
@@ -591,6 +592,14 @@ function! Tex_ScanFileForCite(prefix)
 					call Tex_Debug('finding .bbl file ['.bufname('.').']', 'view')
 					call Tex_Grepadd('\\bibitem{'.a:prefix, "%")
 					q
+				else
+					" Assume that file is a full path - can also be a remote
+					" file or url, such as http://..., which is useful for
+					" use with zotero.
+					exec 'split "'.Tex_EscapeSpaces(bibname).'"'
+					call Tex_Debug('opening bibliography file', 'view')
+					call Tex_Grepadd('@.*{'.a:prefix, "%")
+					q
 				endif
 			endif
 
@@ -603,11 +612,11 @@ function! Tex_ScanFileForCite(prefix)
 	endif
 
 	" If we have a thebibliography environment, then again assume that this is
-	" the only file which defines the bib-keys. Aand convey this information
+	" the only file which defines the bib-keys. And convey this information
 	" upwards by returning 1.
 	if search('^\s*\\begin{thebibliography}', 'w')
 		call Tex_Debug('got a thebibliography environment in '.bufname('%'), 'view')
-		
+
 		let foundCiteFile = 1
 
 		split
@@ -722,10 +731,10 @@ endfunction " }}}
 " get the place where this plugin resides for setting cpt and dict options.
 " these lines need to be outside the function.
 let s:path = expand('<sfile>:p:h')
-if has('python') && Tex_GetVarValue('Tex_UsePython')
-	python import sys, re
-	exec "python sys.path += [r'". s:path . "']"
-	python import outline
+if g:Tex_HasPython
+	exec g:Tex_PythonCmd . " import sys, re"
+	exec g:Tex_PythonCmd . " sys.path += [r'". s:path . "']"
+	exec g:Tex_PythonCmd . " import outline"
 endif
 
 function! Tex_StartOutlineCompletion()
@@ -739,15 +748,6 @@ function! Tex_StartOutlineCompletion()
     set cmdheight=1
     set lazyredraw
 
-	if has('python') && Tex_GetVarValue('Tex_UsePython')
-		python retval = outline.main(vim.eval("Tex_GetMainFileName(':p')"), vim.eval("s:prefix"))
-
-		" transfer variable from python to a local variable.
-		python vim.command("""let retval = "%s" """ % re.sub(r'"|\\', r'\\\g<0>', retval))
-	else
-		let retval = system(shellescape(s:path.'/outline.py').' '.shellescape(mainfname).' '.shellescape(s:prefix))
-	endif
-
     bot split __OUTLINE__
 	exec Tex_GetVarValue('Tex_OutlineWindowHeight', 15).' wincmd _'
 
@@ -759,9 +759,16 @@ function! Tex_StartOutlineCompletion()
     setlocal foldmethod=marker
     setlocal foldmarker=<<<,>>>
 
-	" delete everything in it to the blackhole
-	% d _
-	0put!=retval
+	if Tex_UsePython()
+		exec g:Tex_PythonCmd . ' retval = outline.main("""' . mainfname . '""", """' . s:prefix . '""")'
+		exec g:Tex_PythonCmd . ' vim.current.buffer[:] = retval.splitlines()'
+	else
+		" delete everything in it to the blackhole
+		% d _
+
+		let retval = system(shellescape(s:path.'/outline.py').' '.shellescape(mainfname).' '.shellescape(s:prefix))
+		0put!=retval
+	endif
 
 	0
 
@@ -832,12 +839,12 @@ function! Tex_FindBibFiles()
 	new
 	exec 'e ' . fnameescape(mainfname)
 
-	if search('\\\(no\)\?bibliography{', 'w')
+	if search('\(%.*\)\@<!\\\(\(no\)\?bibliography\|addbibresource\(\[.*\]\)\?\){', 'w')
 
 		call Tex_Debug('Tex_FindBibFiles: found bibliography command in '.bufname('%'), 'view')
 
 		" extract the bibliography filenames from the command.
-		let bibnames = matchstr(getline('.'), '\\\(no\)\?bibliography{\zs.\{-}\ze}')
+		let bibnames = matchstr(getline('.'), '\\\(\(no\)\?bibliography\|addbibresource\(\[.*\]\)\?\){\zs.\{-}\ze}')
 		let bibnames = substitute(bibnames, '\s', '', 'g')
 
 		call Tex_Debug(':Tex_FindBibFiles: trying to search through ['.bibnames.']', 'view')
@@ -870,10 +877,10 @@ endfunction " }}}
 
 " get the place where this plugin resides for setting cpt and dict options.
 " these lines need to be outside the function.
-if has('python') && Tex_GetVarValue('Tex_UsePython')
-	python import sys, re
-	exec "python sys.path += [r'". s:path . "']"
-	python import bibtools
+if g:Tex_HasPython
+	exec g:Tex_PythonCmd . " import sys, re"
+	exec g:Tex_PythonCmd . " sys.path += [r'". s:path . "']"
+	exec g:Tex_PythonCmd . " import bibtools"
 endif
 
 function! Tex_StartCiteCompletion()
@@ -889,12 +896,14 @@ function! Tex_StartCiteCompletion()
     bot split __OUTLINE__
 	exec Tex_GetVarValue('Tex_OutlineWindowHeight', 15).' wincmd _'
 
-	exec 'python Tex_BibFile = bibtools.BibFile("""'.bibfiles.'""")'
-	exec 'python Tex_BibFile.addfilter("key ^'.s:prefix.'")'
+	exec g:Tex_PythonCmd . ' Tex_BibFile = bibtools.BibFile("""'.bibfiles.'""")'
+	exec g:Tex_PythonCmd . ' Tex_BibFile.addfilter("key ^'.s:prefix.'")'
+	
 	call Tex_DisplayBibList()
+	"call Tex_EchoBibShortcuts()
 
-	nnoremap <buffer> <Plug>Tex_JumpToNextBibEntry :call search('^\S.*\]$', 'W')<CR>:call Tex_EchoBibShortcuts()<CR>z.
-	nnoremap <buffer> <Plug>Tex_JumpToPrevBibEntry :call search('^\S.*\]$', 'bW')<CR>:call Tex_EchoBibShortcuts()<CR>z.
+	nnoremap <buffer> <Plug>Tex_JumpToNextBibEntry :call search('^\S.*\]$', 'W')<CR>z.:call Tex_EchoBibShortcuts()<CR>
+	nnoremap <buffer> <Plug>Tex_JumpToPrevBibEntry :call search('^\S.*\]$', 'bW')<CR>z.:call Tex_EchoBibShortcuts()<CR>
 	nnoremap <buffer> <Plug>Tex_FilterBibEntries   :call Tex_HandleBibShortcuts('filter')<CR>
 	nnoremap <buffer> <Plug>Tex_RemoveBibFilters   :call Tex_HandleBibShortcuts('remove_filters')<CR>
 	nnoremap <buffer> <Plug>Tex_SortBibEntries	  :call Tex_HandleBibShortcuts('sort')<CR>
@@ -932,13 +941,11 @@ function! Tex_DisplayBibList()
 	" delete everything in it to the blackhole
 	% d _
 
-	exec 'python Tex_CurBuf = vim.current.buffer'
-	exec 'python Tex_CurBuf[:] = str(Tex_BibFile).splitlines()'
+	exec g:Tex_PythonCmd . ' vim.current.buffer[:] = Tex_BibFile.__str__().splitlines()'
 
 	call Tex_SetupBibSyntax()
 
 	0
-	call Tex_EchoBibShortcuts()
 
 	" once the buffer is initialized, go back to the original settings.
 	setlocal nomodifiable
@@ -1017,18 +1024,18 @@ function! Tex_HandleBibShortcuts(command)
 			endif
 			call Tex_Debug(":Tex_HandleBibShortcuts: using inp = [".inp."]", "view")
 			if a:command == 'filter'
-				exec 'python Tex_BibFile.addfilter("'.inp.'")'
+				exec g:Tex_PythonCmd . ' Tex_BibFile.addfilter("'.inp.'")'
 			elseif a:command == 'sort'
-				exec "python Tex_BibFile.addsortfield(\"".inp."\")"
-				exec 'python Tex_BibFile.sort()'
+				exec g:Tex_PythonCmd . " Tex_BibFile.addsortfield(\"".inp."\")"
+				exec g:Tex_PythonCmd . ' Tex_BibFile.sort()'
 			endif
 			silent! call Tex_DisplayBibList()
 		endif
 
 	elseif a:command == 'remove_filters'
 
-		exec 'python Tex_BibFile.rmfilters()'
-		exec 'python Tex_BibFile.addfilter("key ^'.s:prefix.'")'
+		exec g:Tex_PythonCmd . ' Tex_BibFile.rmfilters()'
+		exec g:Tex_PythonCmd . ' Tex_BibFile.addfilter("key ^'.s:prefix.'")'
 		call Tex_DisplayBibList()
 		
 	endif

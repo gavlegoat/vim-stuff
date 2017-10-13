@@ -3,7 +3,6 @@ set nocompatible
 
 " Set vim to use full color range
 set t_Co=256
-
 " Switches the cursor to orange in insert mode and back into gray in other
 " modes. Just helps keep from accidentally typing commands. May break in
 " certain terminals.
@@ -15,7 +14,6 @@ autocmd VimLeave * silent !echo -ne "\033]112\007"
 execute pathogen#infect()
 
 " Configure the status bar
-let g:airline_theme='powerlineish'
 let g:airline_left_sep=''
 let g:airline_right_sep=''
 let g:airline#extensions#tabline#enabled=1
@@ -27,9 +25,9 @@ filetype indent on
 " Show line numbers
 set nu
 
-" Set tabs to 4 characters and replace them with spaces
-set tabstop=4
-set shiftwidth=4
+" Set tabs to 2 characters and replace them with spaces
+set tabstop=2
+set shiftwidth=2
 set expandtab
 set autoindent
 
@@ -49,29 +47,25 @@ set scrolloff=5
 set laststatus=2
 
 " Show the cursor position with horizontal and vertical lines
-set cursorline
-set cursorcolumn
+"set cursorline
+"set cursorcolumn
 
 " Add new windows below and to the right (default is above and left)
 set splitbelow
 set splitright
 
-" Color the 80th column
-set colorcolumn=80
+" Color the column right after textwidth
+set colorcolumn=+1
 
 " Remove the beep sound when an error occurs
 set visualbell
 set t_vb=
 
 syntax on
-colorscheme elflord
-
-" Change the cursor markers
-hi CursorLine cterm=NONE ctermbg=darkgrey
-hi CursorColumn ctermbg=darkgrey
-
-" Make all text on the colored column white for visibility
-hi ColorColumn ctermfg=white
+set background=dark
+" Solarized needs to be told that I'm working with standard terminal colors
+let g:solarized_termcolors=256
+colorscheme solarized
 
 " Highlight trailing whitespace
 hi ExtraWhitespace ctermbg=darkgreen ctermfg=black
@@ -82,15 +76,34 @@ set list listchars=trail:·
 map <C-W>o <Nop>
 
 " Insert closing brace in C style languages
-inoremap {<CR> {<CR>}<ESC>O
+" This should be handled by delimitMate now
+"inoremap {<CR> {<CR>}<ESC>O
+
+let mapleader = " "
+
+inoremap fd <ESC>
+
+" Use <Leader>ww to go to the next window
+nnoremap <Leader>ww <C-w><C-w>
+
+" <Leader>s reloads .vimrc and <Leader>e edits it
+nnoremap <Leader>s :source $MYVIMRC<CR>
+nnoremap <Leader>e :e $MYVIMRC<CR>
 
 " Use latex-suite for Rnw files
 autocmd BufRead,BufNewFile *.Rnw set filetype=tex
-" Use ATS syntax highlighting
-autocmd BufRead,BufNewFile *.dats set filetype=ats
-autocmd BufRead,BufNewFile *.sats set filetype=ats
-autocmd BufRead,BufNewFile *.hats set filetype=ats
-autocmd BufRead,BufNewFile *.cats set filetype=ats
+" Vim opens .smt files with some weird filetype
+autocmd BufRead,BufNewFile *.smt set filetype=txt
 
 " Remove backup files
 set nobackup
+
+" Syntastic setup
+set statusline+=%#warningmwg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 1
+let g:syntastic_check_on_wq = 1
