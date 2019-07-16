@@ -109,3 +109,7 @@ let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 1
 let g:syntastic_cpp_compiler_options = " -std=c++11"
 
+" Start NERDTree on open
+autocmd vimenter * NERDTree
+" Close vim if NERDTREE is the only buffer left
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif

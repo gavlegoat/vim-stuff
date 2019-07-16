@@ -27,6 +27,14 @@ Resource all local vimrc files for the current buffer.
 Clear all stored decisions made in the past, when the plugin asked about
 sourcing a local vimrc file.
 
+### The `LocalVimRCCleanup` command
+
+Remove all stored decisions for local vimrc files that no longer exist.
+
+### The `LocalVimRCForget` command
+
+Remove stored decisions for given local vimrc files.
+
 ### The `LocalVimRCEdit` command
 
 Open the local vimrc file for the current buffer in an split window for
@@ -51,9 +59,15 @@ Globally disable the loading of local vimrc files if loading has been disabled
 by |LocalVimRCEnable| or by setting |g:localvimrc_enable| to `1` during
 startup.
 
+### The `LocalVimRCDebugShow` command
+
+Show all stored debugging messages. To see any message with this command
+debugging needs to be enabled with |g:localvimrc_debug|. The number of messages
+stored and printed can be limited using the setting |g:localvimrc_debug_lines|.
+
 ## Functions
 
-### The `LocalVimRCFinish` command
+### The `LocalVimRCFinish` function
 
 After a call to this function the sourcing of any remaining local vimrc files
 will be skipped. In combination with the |g:localvimrc_reverse| option it is
@@ -328,11 +342,33 @@ every local vimrc file.
 
   - Default: `1`
 
+### The `g:localvimrc_python2_enable` setting
+
+Enable probing whether python 2 is available and usable for calculating local
+vimrc file checksums, in case |sha256()| is not available.
+
+- Default: `1`
+
+### The `g:localvimrc_python3_enable` setting
+
+Enable probing whether python 3 is available and usable for calculating local
+vimrc file checksums, in case |sha256()| is not available.
+
+- Default: `1`
+
 ### The `g:localvimrc_debug` setting
 
-Debug level for this script.
+Debug level for this script. The messages can be shown with
+|LocalVimRCDebugShow|.
 
   - Default: `0`
+
+### The `g:localvimrc_debug_lines` setting
+
+Limit for the number of debug messages stored. The messages can be shown with
+|LocalVimRCDebugShow|.
+
+  - Default: `100`
 
 ## Autocommands
 
@@ -353,12 +389,46 @@ This autocommand is emitted right before sourcing each local vimrc file.
 
 This autocommands is emitted right after sourcing each local vimrc file.
 
+## Frequently Asked Questions
+
+### modeline settings are overwritten by local vimrc
+
+Depending on the |g:localvimrc_event| that is used to trigger loading local
+vimrc files it is possible that |modeline| already had been parsed. This might
+be cause problems. If for example there is `set ts=8 sts=4 sw=4 et` in the
+local vimrc and a Makefile contains `# vim: ts=4 sts=0 sw=4 noet` this modeline
+will not get applied with default settings of localvimrc. There are two
+possibilities to solve this.
+
+The first solution is to use |BufRead| as value for |g:localvimrc_event|. This
+event is emitted by Vim before modelines are processed.
+
+The second solution is to move all those settings to the local vimrc file and
+use different settings depending on the |filetype|:
+
+``` {.vim}
+if &ft == "make"
+  setl ts=4 sts=0 sw=4 noet
+else
+  setl ts=8 sts=4 sw=4 et
+endif
+```
+
 ## Contribute
 
 To contact the author (Markus Braun), please send an email to <markus.braun@krawel.de>
 
 If you think this plugin could be improved, fork on [Bitbucket] or [GitHub] and
 send a pull request or just tell me your ideas.
+
+If you encounter a bug please enable debugging, export debugging messages to
+a file and create a bug report either on [Bitbucket] or [GitHub]. Debug
+messages can be enabled temporary and exported to a file called
+`localvimrc_debug.txt` on command line with the following command:
+
+``` {.sh}
+vim --cmd "let g:localvimrc_debug=99" -c "redir! > localvimrc_debug.txt" -c "LocalVimRCDebugShow" -c "redir END" your_file
+```
 
 ## Credits
 
@@ -368,8 +438,25 @@ send a pull request or just tell me your ideas.
 - Justin M. Keyes for ideas to improve this plugin
 - Lars Winderling for whitelist/blacklist patch
 - Michon van Dooren for autocommands patch
+- Benoit de Chezell for fix with nested execution
 
 ## Changelog
+
+vX.X.X : XXXX-XX-XX
+
+  - prevent recursive sourcing of local vimrc files
+
+v3.0.1 : 2018-08-21
+
+  - fix a compatibility issue with unavailable |v:true| and |v:false| in Vim version 7.4
+
+v3.0.0 : 2018-08-14
+
+  - use SHA256 as for calculating checksums and use FNV-1 as fallback.
+  - add command |LocalVimRCCleanup| to remove all unusable persistence data.
+  - add command |LocalVimRCForget| to remove persistence data for given files.
+  - add command |LocalVimRCDebugShow| to show debug messages.
+  - add setting |g:localvimrc_debug_lines| to limit the number of stored debug messages.
 
 v2.7.0 : 2018-03-19
 
