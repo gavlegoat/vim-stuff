@@ -1,4 +1,22 @@
-" Explicitly turn off compatibility mode (should be off anyway)
+" List of packages I use:
+" * Major improvements:
+"   - pathogen (consider switching to the built-in package manager in Vim 8+)
+"   - YouCompleteMe
+"   - syntastic
+"   - nerdtree
+" * Minor utilities and cosmetics:
+"   - delimitMate
+"   - vim-airline
+"   - vim-colors-solarized
+"   - vim-easymotion
+"   - vim-localvimrc
+" * Language support
+"   - haskell-vim
+"   - rust.vim
+"   - vim-scala
+"   - vim-latex/latex-suite
+
+"" Explicitly turn off compatibility mode (should be off anyway)
 set nocompatible
 
 " Set vim to use full color range
@@ -106,8 +124,15 @@ set statusline+=%*
 let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 1
-let g:syntastic_cpp_compiler_options = " -std=c++11"
+let g:syntastic_check_on_wq = 0
+let g:syntastic_cpp_compiler_options = " -std=c++17"
+
+" YouCompleteMe settings
+" Add errors to the location list so we can jump to them easily.
+let ycm_always_populate_location_list = 1
+" Add a shortcut to go to the definition or declaration of the identifier
+" under the cursor.
+nnoremap <Leader>jd :YcmCompleter GoTo<CR>
 
 " Start NERDTree on open
 autocmd vimenter * NERDTree
