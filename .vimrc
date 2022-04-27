@@ -15,6 +15,8 @@
 "   - rust.vim
 "   - vim-scala
 "   - vim-latex/latex-suite
+"   - python-mode
+"   - julia-vim + vim-slime (also requires tmux)
 
 "" Explicitly turn off compatibility mode (should be off anyway)
 set nocompatible
@@ -97,8 +99,10 @@ map <C-W>o <Nop>
 " This should be handled by delimitMate now
 "inoremap {<CR> {<CR>}<ESC>O
 
+" Use space as the leader character
 let mapleader = " "
 
+" Use fd to leave insert mode instead of Esc
 inoremap fd <ESC>
 
 " Use <Leader>ww to go to the next window
@@ -125,7 +129,11 @@ let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 1
 let g:syntastic_check_on_wq = 0
-let g:syntastic_cpp_compiler_options = " -std=c++17"
+let g:syntastic_cpp_checkers = ['clang-tidy']
+let g:syntastic_cpp_auto_refresh_includes = 1
+let g:syntastic_cpp_clang_tidy_args = '-checks=*'
+" Ignore python files in syntastic, checking is handled by python-mode
+let g:syntastic_ignore_files = ['\.py$']
 
 " YouCompleteMe settings
 " Add errors to the location list so we can jump to them easily.
@@ -138,3 +146,26 @@ nnoremap <Leader>jd :YcmCompleter GoTo<CR>
 autocmd vimenter * NERDTree
 " Close vim if NERDTREE is the only buffer left
 autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
+" Set up Merlin for OCaml
+let g:opamshare = substitute(system('opam var share'),'\n$','','''')
+execute "set rtp+=" . g:opamshare . "/merlin/vim"
+
+" Set up vim-slime and tmux for Julia editing
+let g:slime_target = "tmux"
+let g:slime_default_config = {"socket_name": "default", "target_pane": "{last}"}
+let g:slime_dont_ask_default = 1
+
+" To automatically open a Julia REPL when opening julia files, put the
+" following in a script and use that script to open:
+" (https://proceed-to-decode.com/posts/vim-tmus-julia)
+"
+" tmux new \; \
+"         send-keys "vim $1" Enter \; \
+"         split-window -v \; \
+"         rename-window julia \; \
+"         send-keys "julia" Enter \; \
+"         select-pane -t 0 \;
+"
+" It may also be useful to add `bind X confirm-before kill-session` to
+" ~/.tmux.conf in order to easily exit the whole session with C-b X
